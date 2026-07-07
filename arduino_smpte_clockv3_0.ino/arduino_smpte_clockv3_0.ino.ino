@@ -250,13 +250,25 @@ void initTimer0(void)
 
 // ---- LTC bit-clock timing (derived from the selected FPS) -------------------
 
-// Timer1 fires at the half-bit rate (2 edges per bit * 80 bits * fps). With
-// prescaler 8 at 16 MHz the timer clock is 2 MHz.
+// Timer1 fires at the half-bit rate (2 edges per bit * 80 bits * fps).
+// Prescaler 1 keeps the 16 MHz timer clock, giving fine enough resolution to
+// actually distinguish 29.97 from 30 (at prescaler 8 both round to the same
+// OCR1A, so the pulldown would be lost). OCR1A = timerHz/halfBitHz - 1.
+//
+// 29.97 is the NTSC 30000/1001 "pulldown", NOT a round 30 fps: the true rate is
+// 0.1% slower. Applying it here (together with drop-frame counting) is what keeps
+// the timecode tracking wall-clock time; using 30 fps timing would drift ~3.6 s/hr.
+// Rounded-to-nearest OCR1A @16 MHz: 24->4166, 25->3999, 30->3332, 29.97->3336.
 void applyFpsTiming(void)
 {
-  uint8_t tf = framesForFps(selectedFPS);  // 29.97 uses 30 fps timing
-  uint16_t halfBitHz_div = (uint16_t)(160UL * tf);
-  OCR1A = (uint16_t)((2000000UL / halfBitHz_div) - 1);
+  if (selectedFPS == FPS_2997) {
+    // round(16e6 * 1001 / (160 * 30000)) - 1 = round(3337.17) - 1 = 3336
+    // (precomputed to avoid 32-bit overflow of 16e6*1001)
+    OCR1A = 3336;
+  } else {
+    uint32_t div = 160UL * selectedFPS;
+    OCR1A = (uint16_t)(((16000000UL + div / 2) / div) - 1);  // round to nearest
+  }
 }
 
 // ---- Menu logic -------------------------------------------------------------
@@ -476,9 +488,10 @@ void setup(void)
   initTimer0();
   initDisplay();
 
-  // Timer1: LTC half-bit clock. CTC mode, prescaler 8.
+  // Timer1: LTC half-bit clock. CTC mode, prescaler 1 (fine resolution so
+  // 29.97 pulldown is distinguishable from 30 fps).
   TCCR1A = 0;
-  TCCR1B = _BV(WGM12) | _BV(CS11);
+  TCCR1B = _BV(WGM12) | _BV(CS10);
   applyFpsTiming();          // Sets OCR1A from selectedFPS
   TIMSK1 = _BV(OCIE1A);
 
