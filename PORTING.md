@@ -40,6 +40,19 @@ on the ESP8266. Replace them with the ESP8266 Arduino core APIs.
 - [ ] Keep the portable core (LTC frame, biphase, MTC, drop-frame, menu) intact.
 - [ ] Feed the WDT (`yield()`/short `loop()`); never block in the ISR.
 
+## Must preserve: SMPTE accuracy (do not regress)
+
+Whatever timer/peripheral drives the bit clock, the port is only correct if it
+keeps the accuracy `main` already has:
+
+- **29.97 pulldown:** run 29.97 at the true **30000/1001** rate (half-bit rate =
+  `160 * fps`), *distinct* from a rounded 30 fps — don't collapse 29.97 to 30.
+- **Drop-frame counting:** keep `timeUpdate()`'s rule (skip frame numbers 0 and 1
+  at the top of each minute except every 10th) and set the LTC drop-frame flag.
+- **Verify:** 29.97 within ~0.05% of 30000/1001 and different from the 30 fps
+  setting; a normal DF minute advances 1798 frames (1800 on minute 10). Port the
+  host tests from the `.agi` envelope to confirm.
+
 ## Build
 ```bash
 arduino-cli config add board_manager.additional_urls \
