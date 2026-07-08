@@ -149,5 +149,15 @@ want them promoted into a `test/` folder with a CI runner.
 
 ## License
 
-No license file is currently included. Add one (e.g. MIT) if you intend others to
-reuse this.
+Licensed under the **Business Source License 1.1** (BSL 1.1) — see [`LICENSE`](LICENSE).
+
+- **Source-available:** you may read, copy, modify, and redistribute the source.
+- **Free for non-commercial use:** personal, educational, hobbyist, and research use
+  (including building and using the device) is permitted.
+- **Commercial use requires a separate license** from the Licensor until the Change
+  Date.
+- **Change Date `2030-07-08`** (4 years from first publication, per BSL 1.1): on that
+  date the code automatically converts to the **Apache License 2.0**.
+
+Licensor / copyright: **RetroNerdGirl53**. This is a source-available license, not an
+OSI "open source" license. Nothing here is legal advice.
