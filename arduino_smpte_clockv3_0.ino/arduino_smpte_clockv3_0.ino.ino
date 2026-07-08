@@ -244,7 +244,9 @@ void initTimer0(void)
 {
   TCCR0A = (1 << WGM01);               // CTC mode
   TCCR0B = (1 << CS02) | (1 << CS00);  // Prescaler 1024
-  OCR0A = 155;                         // (155+1)*1024/16MHz = 9.98 ms
+  // ~10 ms tick derived from F_CPU: OCR0A = round(F_CPU / 1024 / 100Hz) - 1.
+  // (155 @16 MHz, 77 @8 MHz.)
+  OCR0A = (uint8_t)((F_CPU / 1024UL / 100UL) - 1);
   TIMSK0 = (1 << OCIE0A);
 }
 
@@ -262,12 +264,12 @@ void initTimer0(void)
 void applyFpsTiming(void)
 {
   if (selectedFPS == FPS_2997) {
-    // round(16e6 * 1001 / (160 * 30000)) - 1 = round(3337.17) - 1 = 3336
-    // (precomputed to avoid 32-bit overflow of 16e6*1001)
-    OCR1A = 3336;
+    // OCR1A = round(F_CPU * 1001 / (160 * 30000)) - 1.
+    // 64-bit math avoids overflow of F_CPU*1001 (e.g. 16e6*1001 > uint32 max).
+    OCR1A = (uint16_t)(((uint64_t)F_CPU * 1001UL + 2400000UL) / 4800000UL - 1);
   } else {
     uint32_t div = 160UL * selectedFPS;
-    OCR1A = (uint16_t)(((16000000UL + div / 2) / div) - 1);  // round to nearest
+    OCR1A = (uint16_t)(((F_CPU + div / 2) / div) - 1);  // round to nearest
   }
 }
 
