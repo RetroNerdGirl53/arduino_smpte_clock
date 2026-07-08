@@ -37,6 +37,19 @@ Pick a UART and a coherent set of GPIO. Example using USART1 for MIDI:
 - [ ] Confirm the OLED is on the Mega's I²C pins (SDA=D20, SCL=D21).
 - [ ] `arduino-cli compile --fqbn arduino:avr:mega arduino_smpte_clockv3_0.ino`
 
+## Must preserve: SMPTE accuracy (do not regress)
+
+Whatever timer/peripheral drives the bit clock, the port is only correct if it
+keeps the accuracy `main` already has:
+
+- **29.97 pulldown:** run 29.97 at the true **30000/1001** rate (half-bit rate =
+  `160 * fps`), *distinct* from a rounded 30 fps — don't collapse 29.97 to 30.
+- **Drop-frame counting:** keep `timeUpdate()`'s rule (skip frame numbers 0 and 1
+  at the top of each minute except every 10th) and set the LTC drop-frame flag.
+- **Verify:** 29.97 within ~0.05% of 30000/1001 and different from the 30 fps
+  setting; a normal DF minute advances 1798 frames (1800 on minute 10). Port the
+  host tests from the `.agi` envelope to confirm.
+
 ## Build
 ```bash
 arduino-cli core install arduino:avr
